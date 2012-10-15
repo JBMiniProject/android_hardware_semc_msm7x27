@@ -266,7 +266,7 @@ AudioStreamIn* AudioHardware::openInputStream(
          (getInputSampleRate(*sampleRate) > AUDIO_HW_IN_SAMPLERATE) &&
          (*format == AUDIO_HW_IN_FORMAT) )
     {
-        LOGE("PCM recording, in a voice call, with sample rate more than 8K not supported \
+        ALOGE("PCM recording, in a voice call, with sample rate more than 8K not supported \
                 re-configure with 8K and try software re-sampler ");
         *status = BAD_VALUE;
         *sampleRate = AUDIO_HW_IN_SAMPLERATE;
@@ -1382,12 +1382,12 @@ status_t AudioHardware::doRouting(AudioStreamInMSM72xx *input)
             if (mTtyMode == TTY_FULL) {
                 ALOGI("Routing audio to TTY FULL Mode\n");
                 new_snd_device = SND_DEVICE_TTY_HEADSET;
-            } else if (mTtyMode == TTY_TTY_VCO) {
+            } else if (mTtyMode == TTY_VCO) {
                 ALOGI("Routing audio to TTY VCO Mode\n");
-                new_snd_device = SND_DEVICE_VCO;
-            } else if (mTtyMode == TTY_TTY_HCO) {
+                new_snd_device = SND_DEVICE_TTY_VCO;
+            } else if (mTtyMode == TTY_HCO) {
                 ALOGI("Routing audio to TTY HCO Mode\n");
-                new_snd_device = SND_DEVICE_HCO;
+                new_snd_device = SND_DEVICE_TTY_HCO;
             }
         } else if (outputDevices &
                    (AudioSystem::DEVICE_OUT_BLUETOOTH_SCO | AudioSystem::DEVICE_OUT_BLUETOOTH_SCO_HEADSET)) {
