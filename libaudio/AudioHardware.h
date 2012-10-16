@@ -216,8 +216,7 @@ private:
     int previous_snd_device;
     status_t    setFmOnOff(bool onoff);
     status_t    setFmSpeakerOnOff(bool onoff);
-    bool mFmRadioEnabled;
-    bool mFmRadioSpeakerEnabled;
+
     AudioStreamInMSM72xx*   getActiveInput_l();
 
     class AudioStreamOutMSM72xx : public AudioStreamOut {
@@ -317,10 +316,12 @@ private:
             int mNumSndEndpoints;
             int mCurSndDevice;
             int m7xsnddriverfd;
-            bool        mDualMicEnabled;
-            int         mTtyMode;
+            bool mDualMicEnabled;
+            int mTtyMode;
 
-            bool        mBuiltinMicSelected;
+            bool mBuiltinMicSelected;
+            bool mFmRadioEnabled;
+            bool mFmRadioSpeakerEnabled;
 
      friend class AudioStreamInMSM72xx;
             android::Mutex       mLock;
