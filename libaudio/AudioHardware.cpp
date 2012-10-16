@@ -68,6 +68,8 @@ static bool adrc_filter_exists[3];
 static bool mbadrc_filter_exists[3];
 static int post_proc_feature_mask = 0;
 static bool playback_in_progress = false;
+static int64_t timeStarted = 0;
+static int64_t timePlayed = 0;
 
 //Pre processing parameters
 static struct tx_iir tx_iir_cfg[9];
@@ -1739,6 +1741,13 @@ bool AudioHardware::AudioStreamOutMSM72xx::checkStandby()
     return mStandby;
 }
 
+status_t AudioHardware::AudioStreamOutMSM72xx::getNextWriteTimestamp(int64_t *timestamp)
+{
+
+    *timestamp = nanoseconds_to_microseconds(systemTime(SYSTEM_TIME_MONOTONIC)) - timeStarted + timePlayed;//needed
+    ALOGV("Timestamp returned = %lld\n", *timestamp);
+    return NO_ERROR;
+}
 
 status_t AudioHardware::AudioStreamOutMSM72xx::setParameters(const String8& keyValuePairs)
 {
