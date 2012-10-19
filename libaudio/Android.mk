@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifeq ($(BUILD_JBMP_TEST_AUDIO),true)
+
 ifneq ($(BUILD_TINY_ANDROID),true)
 
 LOCAL_PATH := $(call my-dir)
@@ -72,3 +74,5 @@ endif
 include $(BUILD_SHARED_LIBRARY)
 
 endif # not BUILD_TINY_ANDROID
+
+endif # BUILD_JBMP_TEST_AUDIO
