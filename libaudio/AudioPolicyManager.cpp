@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "AudioPolicyManager"
+#define LOG_TAG "JBMP_AudioPolicyManager"
 //#define LOG_NDEBUG 0
 #include <utils/Log.h>
 #include "AudioPolicyManager.h"
 #include <media/mediarecorder.h>
 #include <fcntl.h>
+#include <cutils/properties.h>
+#include "AudioHardware.h"
 
 namespace android_audio_legacy {
-
 
 // ----------------------------------------------------------------------------
 // AudioPolicyManager for msm7k platform
@@ -124,19 +125,20 @@ audio_devices_t AudioPolicyManager::getDeviceForStrategy(routing_strategy strate
     break;
 
     case STRATEGY_SONIFICATION:
-
-        // If incall, just select the STRATEGY_PHONE device: The rest of the behavior is handled by
-        // handleIncallSonification().
-        if (mPhoneState == AudioSystem::MODE_IN_CALL) {
-            device = getDeviceForStrategy(STRATEGY_PHONE, false);
-            break;
-        }
         device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_SPEAKER;
         if (device == 0) {
             ALOGE("getDeviceForStrategy() speaker device not found");
         }
         // The second device used for sonification is the same as the device used by media strategy
         // FALL THROUGH
+
+    case STRATEGY_ENFORCED_AUDIBLE:
+        // If incall, just select the STRATEGY_PHONE device: The rest of the behavior is handled by
+        // handleIncallSonification().
+        if (mPhoneState == AudioSystem::MODE_IN_CALL) {
+            device = getDeviceForStrategy(STRATEGY_PHONE, false);
+            break;
+        }
 
     case STRATEGY_MEDIA: {
         uint32_t device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_AUX_DIGITAL;
@@ -235,7 +237,7 @@ status_t AudioPolicyManager::checkAndSetVolume(int stream, int index, audio_io_h
         } else {
             voiceVolume = 1.0;
         }
-        if (voiceVolume >= 0 && output == mPrimaryOutput) {
+        if (voiceVolume != mLastVoiceVolume && output == mPrimaryOutput) {
             mpClientInterface->setVoiceVolume(voiceVolume, delayMs);
             mLastVoiceVolume = voiceVolume;
         }

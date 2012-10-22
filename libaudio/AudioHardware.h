@@ -32,6 +32,8 @@ extern "C" {
 }
 
 namespace android_audio_legacy {
+using android::SortedVector;
+using android::Mutex;
 
 // ----------------------------------------------------------------------------
 // Kernel driver interface
@@ -70,7 +72,7 @@ struct eq_filter_type {
     uint16_t qf;
 };
 
-struct eqalizer {
+struct equalizer {
     uint16_t bands;
     uint16_t params[132];
 };
@@ -154,6 +156,11 @@ enum tty_modes {
 #define AUDIO_HW_IN_FORMAT (AudioSystem::PCM_16_BIT)  // Default audio input sample format
 // ----------------------------------------------------------------------------
 
+using android_audio_legacy::AudioHardwareBase;
+using android_audio_legacy::AudioStreamOut;
+using android_audio_legacy::AudioStreamIn;
+using android_audio_legacy::AudioSystem;
+using android_audio_legacy::AudioHardwareInterface;
 
 class AudioHardware : public  AudioHardwareBase
 {
@@ -243,9 +250,6 @@ private:
         virtual String8     getParameters(const String8& keys);
                 uint32_t    devices() { return mDevices; }
         virtual status_t    getRenderPosition(uint32_t *dspFrames);
-        virtual status_t    addAudioEffect(effect_handle_t effect){return INVALID_OPERATION;}
-        virtual status_t    removeAudioEffect(effect_handle_t effect){return INVALID_OPERATION;}
-        virtual status_t    getNextWriteTimestamp(int64_t *timestamp);
 
     private:
                 AudioHardware* mHardware;
@@ -287,8 +291,8 @@ private:
         virtual unsigned int  getInputFramesLost() const { return 0; }
                 uint32_t    devices() { return mDevices; }
                 int         state() const { return mState; }
-        virtual status_t    addAudioEffect(effect_handle_t effect){return INVALID_OPERATION;}
-        virtual status_t    removeAudioEffect(effect_handle_t effect){return INVALID_OPERATION;}
+        virtual status_t    addAudioEffect(effect_interface_s**) { return 0; }
+        virtual status_t    removeAudioEffect(effect_interface_s**) { return 0; }
 
     private:
                 AudioHardware* mHardware;
@@ -302,6 +306,7 @@ private:
                 AudioSystem::audio_in_acoustics mAcoustics;
                 uint32_t    mDevices;
                 bool        mFirstread;
+                static int InstanceCount;
     };
 
             static const uint32_t inputSamplingRates[];
@@ -310,7 +315,7 @@ private:
             bool        mBluetoothNrec;
             uint32_t    mBluetoothId;
             AudioStreamOutMSM72xx*  mOutput;
-            android::SortedVector<AudioStreamInMSM72xx*>   mInputs;
+            SortedVector<AudioStreamInMSM72xx*>   mInputs;
 
             msm_snd_endpoint *mSndEndpoints;
             int mNumSndEndpoints;
@@ -324,7 +329,7 @@ private:
             bool mFmRadioSpeakerEnabled;
 
      friend class AudioStreamInMSM72xx;
-            android::Mutex       mLock;
+            Mutex       mLock;
 };
 
 // ----------------------------------------------------------------------------
