@@ -258,8 +258,6 @@ private:
                 int         mRetryCount;
                 bool        mStandby;
                 uint32_t    mDevices;
-                int64_t timePlayed;
-                int64_t timeStarted;
     };
 
     class AudioStreamInMSM72xx : public AudioStreamIn {
