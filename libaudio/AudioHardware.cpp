@@ -31,8 +31,6 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include <cutils/properties.h>
-
 // hardware specific functions
 
 #include "AudioHardware.h"
@@ -54,7 +52,6 @@ const uint32_t AudioHardware::inputSamplingRates[] = {
 
 static int get_audpp_filter(void);
 static int msm72xx_enable_postproc(bool state);
-static int msm72xx_enable_preproc(bool state);
 
 // Post processing paramters
 static struct rx_iir_filter iir_cfg[3];
@@ -72,14 +69,13 @@ static bool audpp_filter_inited = false;
 static bool adrc_filter_exists[3];
 static bool mbadrc_filter_exists[3];
 static int post_proc_feature_mask = 0;
-static int new_post_proc_feature_mask = 0;
 static bool playback_in_progress = false;
 
 //Pre processing parameters
 static struct tx_iir tx_iir_cfg[9];
 static struct ns ns_cfg[9];
 static struct tx_agc tx_agc_cfg[9];
-static int enable_preproc_mask[9];
+static int enable_preproc_mask;
 
 static int snd_device = -1;
 
@@ -223,9 +219,7 @@ AudioHardware::~AudioHardware()
       close(m7xsnddriverfd);
       m7xsnddriverfd = -1;
     }
-    for (int index = 0; index < 9; index++) {
-        enable_preproc_mask[index] = 0;
-    }
+    enable_preproc_mask = 0;
     mInit = false;
 }
 
@@ -240,13 +234,14 @@ AudioStreamOut* AudioHardware::openOutputStream(
     { // scope for the lock
         Mutex::Autolock lock(mLock);
 
+        AudioStreamOutMSM72xx* out;
         if (mOutput) {
-            if (status) {
-                *status = INVALID_OPERATION;
-            }
-            return 0;
+            // only one output stream allowed
+            out = mOutput;
+        } else {
+            // create new output stream
+            out = new AudioStreamOutMSM72xx();
         }
-        AudioStreamOutMSM72xx* out = new AudioStreamOutMSM72xx();
 
         status_t lStatus = out->set(this, devices, format, channels, sampleRate);
         if (status) {
@@ -430,6 +425,9 @@ status_t AudioHardware::setParameters(const String8& keyValuePairs)
             mTtyMode = TTY_VCO;
         } else {
             mTtyMode = TTY_OFF;
+        }
+        if(mMode != AudioSystem::MODE_IN_CALL){
+           return NO_ERROR;
         }
     } else {
         mTtyMode = TTY_OFF;
@@ -768,7 +766,7 @@ int check_and_set_audpp_parameters(char *buf, int size)
 
         ALOGV("TX IIR flag = %02x.", txiir_flag[device_id]);
         if (txiir_flag[device_id] != 0)
-             enable_preproc_mask[samp_index] |= TX_IIR_ENABLE;
+             enable_preproc_mask |= TX_IIR_ENABLE;
         } else if(buf[0] == 'F')  {
         /* AGC filter */
         if (!(p = strtok(buf, ",")))
@@ -811,7 +809,7 @@ int check_and_set_audpp_parameters(char *buf, int size)
         agc_flag[device_id] = (uint16_t)strtol(p, &ps, 16);
         ALOGV("AGC flag = %02x.", agc_flag[device_id]);
         if (agc_flag[device_id] != 0)
-            enable_preproc_mask[samp_index] |= AGC_ENABLE;
+            enable_preproc_mask |= AGC_ENABLE;
         } else if ((buf[0] == 'G')) {
         /* This is the NS record we are looking for.  Tokenize it */
         if (!(p = strtok(buf, ",")))
@@ -861,7 +859,7 @@ int check_and_set_audpp_parameters(char *buf, int size)
 
         ALOGV("NS flag = %02x.", ns_flag[device_id]);
         if (ns_flag[device_id] != 0)
-            enable_preproc_mask[samp_index] |= NS_ENABLE;
+            enable_preproc_mask |= NS_ENABLE;
         }
     }
     return 0;
@@ -935,14 +933,6 @@ static int msm72xx_enable_postproc(bool state)
 {
     int fd;
     int device_id=0;
-    char postProc[128];
-
-    property_get("audio.legacy.postproc", postProc, "0");
-
-    if (!(strcmp("true",postProc) == 0)) {
-        ALOGV("Legacy Post Proc disabled.");
-        return 0;
-    }
 
     if (!audpp_filter_inited)
     {
@@ -1705,7 +1695,6 @@ ssize_t AudioHardware::AudioStreamOutMSM72xx::write(const void* buffer, size_t b
         if (--mStartCount == 0) {
             ioctl(mFd, AUDIO_START, 0);
             playback_in_progress = true;
-            post_proc_feature_mask = new_post_proc_feature_mask;
             //enable post processing
             msm72xx_enable_postproc(true);
         }
@@ -2063,29 +2052,15 @@ status_t AudioHardware::AudioStreamInMSM72xx::set(
     //if (!acoustic)
     //    return NO_ERROR;
 
-    audpre_index = calculate_audpre_table_index(mSampleRate);
-    if(audpre_index < 0) {
-        ALOGE("wrong sampling rate");
-        status = -EINVAL;
-        goto Error;
-    }
-    return NO_ERROR;
-
-Error:
-    if (mFd >= 0) {
-        ::close(mFd);
-        mFd = -1;
-    }
-    return status;
-}
-
-static int msm72xx_enable_preproc(bool state)
-{
-    uint16_t mask = 0x0000;
-
     if (audpp_filter_inited)
     {
         int fd;
+
+        audpre_index = calculate_audpre_table_index(mSampleRate);
+        if(audpre_index < 0) {
+             ALOGE("wrong sampling rate");
+             goto Error;
+        }
 
         fd = open(PREPROC_CTL_DEVICE, O_RDWR);
         if (fd < 0) {
@@ -2093,7 +2068,7 @@ static int msm72xx_enable_preproc(bool state)
              return -EPERM;
         }
 
-        if (enable_preproc_mask[audpre_index] & AGC_ENABLE) {
+        if (enable_preproc_mask & AGC_ENABLE) {
             /* Setting AGC Params */
             ALOGI("AGC Filter Param1= %02x.", tx_agc_cfg[audpre_index].cmd_id);
             ALOGI("AGC Filter Param2= %02x.", tx_agc_cfg[audpre_index].tx_agc_param_mask);
@@ -2102,14 +2077,14 @@ static int msm72xx_enable_preproc(bool state)
             ALOGI("AGC Filter Param5= %02x.", tx_agc_cfg[audpre_index].adaptive_gain_flag);
             ALOGI("AGC Filter Param6= %02x.", tx_agc_cfg[audpre_index].agc_params[0]);
             ALOGI("AGC Filter Param7= %02x.", tx_agc_cfg[audpre_index].agc_params[18]);
-            if ((enable_preproc_mask[audpre_index] & AGC_ENABLE) &&
+            if ((enable_preproc_mask & AGC_ENABLE) &&
                 (ioctl(fd, AUDIO_SET_AGC, &tx_agc_cfg[audpre_index]) < 0))
             {
                 ALOGE("set AGC filter error.");
             }
         }
 
-        if (enable_preproc_mask[audpre_index] & NS_ENABLE) {
+        if (enable_preproc_mask & NS_ENABLE) {
             /* Setting NS Params */
             ALOGI("NS Filter Param1= %02x.", ns_cfg[audpre_index].cmd_id);
             ALOGI("NS Filter Param2= %02x.", ns_cfg[audpre_index].ec_mode_new);
@@ -2119,14 +2094,14 @@ static int msm72xx_enable_preproc(bool state)
             ALOGI("NS Filter Param6= %02x.", ns_cfg[audpre_index].dens_limit_ns_d);
             ALOGI("NS Filter Param7= %02x.", ns_cfg[audpre_index].wb_gamma_e);
             ALOGI("NS Filter Param8= %02x.", ns_cfg[audpre_index].wb_gamma_n);
-            if ((enable_preproc_mask[audpre_index] & NS_ENABLE) &&
+            if ((enable_preproc_mask & NS_ENABLE) &&
                 (ioctl(fd, AUDIO_SET_NS, &ns_cfg[audpre_index]) < 0))
             {
                 ALOGE("set NS filter error.");
             }
         }
 
-        if (enable_preproc_mask[audpre_index] & TX_IIR_ENABLE) {
+        if (enable_preproc_mask & TX_IIR_ENABLE) {
             /* Setting TX_IIR Params */
             ALOGI("TX_IIR Filter Param1= %02x.", tx_iir_cfg[audpre_index].cmd_id);
             ALOGI("TX_IIR Filter Param2= %02x.", tx_iir_cfg[audpre_index].active_flag);
@@ -2134,28 +2109,29 @@ static int msm72xx_enable_preproc(bool state)
             ALOGI("TX_IIR Filter Param4= %02x.", tx_iir_cfg[audpre_index].iir_params[0]);
             ALOGI("TX_IIR Filter Param5= %02x.", tx_iir_cfg[audpre_index].iir_params[1]);
             ALOGI("TX_IIR Filter Param6 %02x.", tx_iir_cfg[audpre_index].iir_params[47]);
-            if ((enable_preproc_mask[audpre_index] & TX_IIR_ENABLE) &&
+            if ((enable_preproc_mask & TX_IIR_ENABLE) &&
                 (ioctl(fd, AUDIO_SET_TX_IIR, &tx_iir_cfg[audpre_index]) < 0))
             {
               ALOGE("set TX IIR filter error.");
             }
         }
 
-        if (state == true) {
-            /*Setting AUDPRE_ENABLE*/
-            if (ioctl(fd, AUDIO_ENABLE_AUDPRE, &enable_preproc_mask[audpre_index]) < 0) {
-                ALOGE("set AUDPRE_ENABLE error.");
-            }
-        } else {
-            /*Setting AUDPRE_ENABLE*/
-            if (ioctl(fd, AUDIO_ENABLE_AUDPRE, &mask) < 0) {
-                ALOGE("set AUDPRE_ENABLE error.");
-            }
+        /*Setting AUDPRE_ENABLE*/
+        if (ioctl(fd, AUDIO_ENABLE_AUDPRE, &enable_preproc_mask) < 0)
+        {
+            ALOGE("set AUDPRE_ENABLE error.");
         }
         close(fd);
     }
 
     return NO_ERROR;
+
+Error:
+    if (mFd >= 0) {
+        ::close(mFd);
+        mFd = -1;
+    }
+    return status;
 }
 
 AudioHardware::AudioStreamInMSM72xx::~AudioStreamInMSM72xx()
@@ -2174,8 +2150,8 @@ ssize_t AudioHardware::AudioStreamInMSM72xx::read( void* buffer, ssize_t bytes)
     size_t  aac_framesize= bytes;
     uint8_t* p = static_cast<uint8_t*>(buffer);
     uint32_t* recogPtr = (uint32_t *)p;
-    uint16_t* frameCountPtr = 0;
-    uint16_t* frameSizePtr = 0;
+    uint16_t* frameCountPtr;
+    uint16_t* frameSizePtr;
 
     if (mState < AUDIO_INPUT_OPENED) {
         AudioHardware *hw = mHardware;
@@ -2198,7 +2174,6 @@ ssize_t AudioHardware::AudioStreamInMSM72xx::read( void* buffer, ssize_t bytes)
             standby();
             return -1;
         }
-        msm72xx_enable_preproc(true);
     }
 
     // Resetting the bytes value, to return the appropriate read value
@@ -2260,7 +2235,6 @@ ssize_t AudioHardware::AudioStreamInMSM72xx::read( void* buffer, ssize_t bytes)
 status_t AudioHardware::AudioStreamInMSM72xx::standby()
 {
     if (mState > AUDIO_INPUT_CLOSED) {
-        msm72xx_enable_preproc(false);
         if (mFd >= 0) {
             ::close(mFd);
             mFd = -1;
