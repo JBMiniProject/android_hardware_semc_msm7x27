@@ -32,7 +32,8 @@ endif
 LOCAL_SHARED_LIBRARIES := \
     libcutils       \
     libutils        \
-    libmedia
+    libmedia        \
+    libdl
 
 LOCAL_STATIC_LIBRARIES := \
     libmedia_helper  \

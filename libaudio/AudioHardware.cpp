@@ -60,7 +60,7 @@ static int msm72xx_enable_preproc(bool state);
 static struct rx_iir_filter iir_cfg[3];
 static struct adrc_filter adrc_cfg[3];
 static struct mbadrc_filter mbadrc_cfg[3];
-eqalizer equalizer[3];
+equalizer equalizer[3];
 static uint16_t adrc_flag[3];
 static uint16_t mbadrc_flag[3];
 static uint16_t eq_flag[3];
@@ -142,7 +142,7 @@ AudioHardware::AudioHardware() :
                 CHECK_FOR(BT);
                 CHECK_FOR(BT_EC_OFF);
                 CHECK_FOR(HEADSET);
-                CHECK_FOR(HEADPONE);
+                CHECK_FOR(HEADPHONE);
                 CHECK_FOR(FARFIELD_HEADSET);
                 CHECK_FOR(IN_S_SADC_OUT_HANDSET);
                 CHECK_FOR(IN_S_SADC_OUT_SPEAKER_PHONE);
@@ -604,7 +604,7 @@ int check_and_set_audpp_parameters(char *buf, int size)
             return -1;
         }
         eq_cal = (void *(*) (int32_t, int32_t, int32_t, uint16_t, int32_t, int32_t *, int32_t *, uint16_t *))::dlsym(audioeq, "audioeq_calccoefs");
-        memset(&equalizer[device_id], 0, sizeof(eqalizer));
+        memset(&equalizer[device_id], 0, sizeof(equalizer));
         /* Temp add the bands here */
         equalizer[device_id].bands = 8;
         for (i = 0; i < equalizer[device_id].bands; i++) {
@@ -1346,7 +1346,7 @@ status_t AudioHardware::doAudioRouteOrMute(uint32_t device)
     ALOGD("doAudioRouteOrMute() device %x, mMode %d, mMicMute %d, mBuiltinMicSelected %d, %s",
         device, mMode, mMicMute, mBuiltinMicSelected, mute ? "muted" : "audio circuit active");
     if (mFmRadioEnabled) {
-        if (previous_snd_device == SND_DEVICE_FARFIELD_CL_FM || previous_snd_device == SND_DEVICE_FM_HEADPHONE_FM) {
+        if (previous_snd_device == SND_DEVICE_FARFIELD_CL_FM || previous_snd_device == SND_DEVICE_HEADPHONE_FM) {
             ALOGD("doAudioRouteOrMute() previous_snd_device was FM: %d", previous_snd_device);
             do_route_audio_rpc(previous_snd_device, 0, 1, m7xsnddriverfd);
             do_route_audio_rpc(previous_snd_device, 0, 0, m7xsnddriverfd);
@@ -1360,7 +1360,7 @@ status_t AudioHardware::doRouting(AudioStreamInMSM72xx *input)
 {
     /* currently this code doesn't work without the htc libacoustic */
 
-    Autolock lock(mLock);
+    Mutex::Autolock lock(mLock);
     uint32_t outputDevices = mOutput->devices();
     status_t ret = NO_ERROR;
     int new_snd_device = -1;
@@ -2243,7 +2243,7 @@ ssize_t AudioHardware::AudioStreamInMSM72xx::read( void* buffer, ssize_t bytes)
         }
         else if(bytesRead == 0)
         {
-         ALOGI("Bytes Read = %d ,Buffer no longer sufficient",bytesRead);
+         ALOGI("Bytes Read = %ld ,Buffer no longer sufficient",bytesRead);
          break;
         } else {
             if (errno != EAGAIN) return bytesRead;
