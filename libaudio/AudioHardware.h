@@ -1,6 +1,5 @@
 /*
 ** Copyright 2008, The Android Open-Source Project
-** Copyright 2012, The Jelly Bean Mini Project
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
 ** you may not use this file except in compliance with the License.
@@ -27,13 +26,11 @@
 #include <hardware_legacy/AudioHardwareBase.h>
 
 extern "C" {
-#include "linux/msm_audio.h"
-#include "linux/msm_audio_voicememo.h"
+#include <linux/msm_audio.h>
+#include <linux/msm_audio_voicememo.h>
 }
 
 namespace android_audio_legacy {
-using android::SortedVector;
-using android::Mutex;
 
 // ----------------------------------------------------------------------------
 // Kernel driver interface
@@ -48,7 +45,6 @@ using android::Mutex;
 #define SAMP_RATE_INDX_32000	6
 #define SAMP_RATE_INDX_44100	7
 #define SAMP_RATE_INDX_48000	8
-#define SAMP_RATE_INDX_96000	9
 
 #define EQ_MAX_BAND_NUM 12
 
@@ -72,7 +68,7 @@ struct eq_filter_type {
     uint16_t qf;
 };
 
-struct equalizer {
+struct eqalizer {
     uint16_t bands;
     uint16_t params[132];
 };
@@ -156,11 +152,6 @@ enum tty_modes {
 #define AUDIO_HW_IN_FORMAT (AudioSystem::PCM_16_BIT)  // Default audio input sample format
 // ----------------------------------------------------------------------------
 
-using android_audio_legacy::AudioHardwareBase;
-using android_audio_legacy::AudioStreamOut;
-using android_audio_legacy::AudioStreamIn;
-using android_audio_legacy::AudioSystem;
-using android_audio_legacy::AudioHardwareInterface;
 
 class AudioHardware : public  AudioHardwareBase
 {
@@ -221,9 +212,6 @@ private:
     bool        checkOutputStandby();
     status_t    doRouting(AudioStreamInMSM72xx *input);
     int previous_snd_device;
-    status_t    setFmOnOff(bool onoff);
-    status_t    setFmSpeakerOnOff(bool onoff);
-
     AudioStreamInMSM72xx*   getActiveInput_l();
 
     class AudioStreamOutMSM72xx : public AudioStreamOut {
@@ -250,6 +238,8 @@ private:
         virtual String8     getParameters(const String8& keys);
                 uint32_t    devices() { return mDevices; }
         virtual status_t    getRenderPosition(uint32_t *dspFrames);
+        virtual status_t    addAudioEffect(effect_handle_t effect){return INVALID_OPERATION;}
+        virtual status_t    removeAudioEffect(effect_handle_t effect){return INVALID_OPERATION;}
 
     private:
                 AudioHardware* mHardware;
@@ -289,8 +279,8 @@ private:
         virtual unsigned int  getInputFramesLost() const { return 0; }
                 uint32_t    devices() { return mDevices; }
                 int         state() const { return mState; }
-        virtual status_t    addAudioEffect(effect_interface_s**) { return 0; }
-        virtual status_t    removeAudioEffect(effect_interface_s**) { return 0; }
+        virtual status_t    addAudioEffect(effect_handle_t effect){return INVALID_OPERATION;}
+        virtual status_t    removeAudioEffect(effect_handle_t effect){return INVALID_OPERATION;}
 
     private:
                 AudioHardware* mHardware;
@@ -304,7 +294,6 @@ private:
                 AudioSystem::audio_in_acoustics mAcoustics;
                 uint32_t    mDevices;
                 bool        mFirstread;
-                static int InstanceCount;
     };
 
             static const uint32_t inputSamplingRates[];
@@ -313,21 +302,24 @@ private:
             bool        mBluetoothNrec;
             uint32_t    mBluetoothId;
             AudioStreamOutMSM72xx*  mOutput;
-            SortedVector<AudioStreamInMSM72xx*>   mInputs;
+            android::SortedVector<AudioStreamInMSM72xx*>   mInputs;
 
             msm_snd_endpoint *mSndEndpoints;
             int mNumSndEndpoints;
             int mCurSndDevice;
             int m7xsnddriverfd;
-            bool mDualMicEnabled;
-            int mTtyMode;
+            bool        mDualMicEnabled;
+            int         mTtyMode;
 
-            bool mBuiltinMicSelected;
+            bool        mBuiltinMicSelected;
+
+            status_t    setFmOnOff(bool onoff);
+            status_t    setFmSpeakerOnOff(bool onoff);
             bool mFmRadioEnabled;
             bool mFmRadioSpeakerEnabled;
 
      friend class AudioStreamInMSM72xx;
-            Mutex       mLock;
+            android::Mutex       mLock;
 };
 
 // ----------------------------------------------------------------------------
