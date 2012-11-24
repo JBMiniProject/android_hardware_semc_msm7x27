@@ -1,5 +1,4 @@
-
-ifneq ($(BUILD_TINY_ANDROID),true)
+ifeq($(BUILD_JBMP_TEST_AUDIO),true)
 
 LOCAL_PATH := $(call my-dir)
 
@@ -8,7 +7,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := audio_policy.msm7x27
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 LOCAL_STATIC_LIBRARIES := libmedia_helper
-LOCAL_WHOLE_STATIC_LIBRARIES := libaudiopolicy_legacy    
+LOCAL_WHOLE_STATIC_LIBRARIES := libaudiopolicy_legacy
 LOCAL_MODULE_TAGS := optional
 
 LOCAL_SHARED_LIBRARIES := \
@@ -23,12 +22,11 @@ ifeq ($(BOARD_HAVE_BLUETOOTH),true)
 endif
 
 include $(BUILD_SHARED_LIBRARY)
-
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := audio.primary.msm7x27
-LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw	
-LOCAL_STATIC_LIBRARIES += libmedia_helper	
+LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
+LOCAL_STATIC_LIBRARIES += libmedia_helper
 LOCAL_WHOLE_STATIC_LIBRARIES := libaudiohw_legacy
 LOCAL_MODULE_TAGS := optional
 
@@ -45,4 +43,4 @@ LOCAL_CFLAGS += -fno-short-enums
 
 include $(BUILD_SHARED_LIBRARY)
 
-endif # not BUILD_TINY_ANDROID
+endif

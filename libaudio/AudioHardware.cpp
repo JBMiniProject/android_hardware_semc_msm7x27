@@ -18,7 +18,7 @@
 #include <math.h>
 
 //#define LOG_NDEBUG 0
-#define LOG_TAG "JBMiniProject_audio"
+#define LOG_TAG "AudioHardware"
 #include <utils/Log.h>
 #include <utils/String8.h>
 
@@ -110,7 +110,7 @@ static uint32_t SND_DEVICE_DHVH_FM=-1;
 // ----------------------------------------------------------------------------
 
 AudioHardware::AudioHardware() :
-    mInit(false), mMicMute(true), mBluetoothNrec(true), mBluetoothId(0),
+    mInit(false), mMicMute(true), mBluetoothNrec(true), mBluetoothId(0), mTtyMode(TTY_OFF),
     mOutput(0), mSndEndpoints(NULL), mCurSndDevice(-1), mDualMicEnabled(false), mBuiltinMicSelected(false), mFmRadioEnabled(false), mFmRadioSpeakerEnabled(false)
 {
    if (get_audpp_filter() == 0) {
@@ -1298,7 +1298,6 @@ status_t AudioHardware::doAudioRouteOrMute(uint32_t device)
     bool mute = !isInCall();
     if(mute && ((device == SND_DEVICE_HANDSET_CL) ||(device == SND_DEVICE_FARFIELD_CL))) {
         mute = !mBuiltinMicSelected;
-        ALOGE("Most teszteljuk a kihangositasnal a mikrofont %x", device);
     }
 
     if (device == SND_DEVICE_FARFIELD_CL_FM || device == SND_DEVICE_HEADPHONE_FM) {
