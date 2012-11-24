@@ -384,15 +384,11 @@ CameraHAL_FixupParams(android::CameraParameters &settings)
 {
 // FIXME TODO
    const char *preview_sizes = 
-      "640x480,480x320,352x288,320x240,240x160,176x144";
+      "640x480,480x320,352x288,320x240,176x144";
    const char *video_sizes =
       "640x480,480x320,352x288,320x240,176x144";
-#ifdef BOARD_HAS_JANKY_BACKBUFFER
-   const char *preferred_size       = "320x240";
-#else
-   const char *preferred_size       = "480x320";
-#endif
-   const char *preview_frame_rates  = "30,27,25,24,15";
+   const char *preferred_size       = "640x480";
+   const char *preview_frame_rates  = "30,27,24,15";
    const char *preferred_frame_rate = "15";
    const char *frame_rate_range     = "(15,30)";
    const char *preferred_horizontal_viewing_angle = "51.2";
