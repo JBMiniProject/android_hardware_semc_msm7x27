@@ -83,30 +83,30 @@ static int snd_device = -1;
 #define PREPROC_CTL_DEVICE "/dev/msm_preproc_ctl"
 #define VOICE_MEMO_DEVICE "/dev/msm_voicememo"
 
-static uint32_t SND_DEVICE_CURRENT=-1;
-static uint32_t SND_DEVICE_HANDSET_CL=-1;
-static uint32_t SND_DEVICE_FARFIELD_CL=-1;
-static uint32_t SND_DEVICE_BT=-1;
-static uint32_t SND_DEVICE_BT_EC_OFF=-1;
-static uint32_t SND_DEVICE_HEADSET=-1;
-static uint32_t SND_DEVICE_HEADPHONE=-1;
-static uint32_t SND_DEVICE_FARFIELD_HEADSET=-1;
-static uint32_t SND_DEVICE_IN_S_SADC_OUT_HANDSET=-1;
-static uint32_t SND_DEVICE_IN_S_SADC_OUT_SPEAKER_PHONE=-1;
-static uint32_t SND_DEVICE_TTY=-1;
-static uint32_t SND_DEVICE_HCO=-1;
-static uint32_t SND_DEVICE_VCO=-1;
-static uint32_t SND_DEVICE_CARKIT=-1;
-static uint32_t SND_DEVICE_NO_MIC_HEADSET=-1;
-static uint32_t SND_DEVICE_FARFIELD_OP_FM=-1;
-static uint32_t SND_DEVICE_FARFIELD_CL_FM=-1;
-static uint32_t SND_DEVICE_FARFIELD_OP_FM_LINEIN=-1;
-static uint32_t SND_DEVICE_FARFIELD_CL_FM_LINEIN=-1;
-static uint32_t SND_DEVICE_HEADSET_FM=-1;
-static uint32_t SND_DEVICE_POW_HEADSET_FM=-1;
-static uint32_t SND_DEVICE_HEADPHONE_FM=-1;
-static uint32_t SND_DEVICE_LINEOUT_FIXED_FM=-1;
-static uint32_t SND_DEVICE_DHVH_FM=-1;
+static uint32_t SND_DEVICE_CURRENT=0;
+static uint32_t SND_DEVICE_HANDSET_CL=1;
+static uint32_t SND_DEVICE_FARFIELD_CL=2;
+static uint32_t SND_DEVICE_BT=3;
+static uint32_t SND_DEVICE_BT_EC_OFF=4;
+static uint32_t SND_DEVICE_HEADSET=5;
+static uint32_t SND_DEVICE_HEADPHONE=6;
+static uint32_t SND_DEVICE_FARFIELD_HEADSET=7;
+static uint32_t SND_DEVICE_IN_S_SADC_OUT_HANDSET=8;
+static uint32_t SND_DEVICE_IN_S_SADC_OUT_SPEAKER_PHONE=9;
+static uint32_t SND_DEVICE_TTY=10;
+static uint32_t SND_DEVICE_HCO=11;
+static uint32_t SND_DEVICE_VCO=12;
+static uint32_t SND_DEVICE_CARKIT=13;
+static uint32_t SND_DEVICE_NO_MIC_HEADSET=14;
+static uint32_t SND_DEVICE_FARFIELD_OP_FM=15;
+static uint32_t SND_DEVICE_FARFIELD_CL_FM=16;
+static uint32_t SND_DEVICE_FARFIELD_OP_FM_LINEIN=17;
+static uint32_t SND_DEVICE_FARFIELD_CL_FM_LINEIN=18;
+static uint32_t SND_DEVICE_HEADSET_FM=19;
+static uint32_t SND_DEVICE_POW_HEADSET_FM=20;
+static uint32_t SND_DEVICE_HEADPHONE_FM=21;
+static uint32_t SND_DEVICE_LINEOUT_FIXED_FM=22;
+static uint32_t SND_DEVICE_DHVH_FM=23;
 // ----------------------------------------------------------------------------
 
 AudioHardware::AudioHardware() :
@@ -158,7 +158,7 @@ AudioHardware::AudioHardware() :
         }
         else ALOGE("Could not retrieve number of MSM SND endpoints.");
 
-        int AUTO_VOLUME_ENABLED = 0; // setting enabled as default
+        int AUTO_VOLUME_ENABLED = 0;
 
         static const char *const path = "/system/etc/AutoVolumeControl.txt";
         int txtfd;
@@ -939,10 +939,16 @@ static int msm72xx_enable_postproc(bool state)
         device_id = 1;
         ALOGI("set device to SND_DEVICE_HANDSET_CL device_id=1");
     }
-    if(snd_device == SND_DEVICE_HEADSET)
+
+    if(snd_device == SND_DEVICE_HEADSET || snd_device == SND_DEVICE_HEADPHONE)
     {
         device_id = 2;
-        ALOGI("set device to SND_DEVICE_HEADSET device_id=2");
+        ALOGI("set device to SND_DEVICE_HEADSET/SND_DEVICE_HEADPHONE device_id=2");
+    }
+    if(snd_device == SND_DEVICE_NO_MIC_HEADSET)
+    {
+        device_id = 3;
+        ALOGI("set device to SND_DEVICE_NO_MIC_HEADSET device_id=3");
     }
 
     fd = open(PCM_CTL_DEVICE, O_RDWR);
@@ -1167,6 +1173,7 @@ status_t AudioHardware::setMasterVolume(float v)
     set_volume_rpc(SND_DEVICE_BT,      SND_METHOD_VOICE, vol, m7xsnddriverfd);
     set_volume_rpc(SND_DEVICE_HEADSET, SND_METHOD_VOICE, vol, m7xsnddriverfd);
     set_volume_rpc(SND_DEVICE_HEADPHONE, SND_METHOD_VOICE, vol, m7xsnddriverfd);
+    set_volume_rpc(SND_DEVICE_NO_MIC_HEADSET, SND_METHOD_VOICE, vol, m7xsnddriverfd);
     set_volume_rpc(SND_DEVICE_IN_S_SADC_OUT_HANDSET, SND_METHOD_VOICE, vol, m7xsnddriverfd);
     set_volume_rpc(SND_DEVICE_IN_S_SADC_OUT_SPEAKER_PHONE, SND_METHOD_VOICE, vol, m7xsnddriverfd);
     // We return an error code here to let the audioflinger do in-software
