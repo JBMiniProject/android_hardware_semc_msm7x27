@@ -32,6 +32,7 @@
 #define GRALLOC_USAGE_PMEM_PRIVATE_ADSP GRALLOC_USAGE_PRIVATE_0
 #define MSM_COPY_HW 1
 #define HWA 1
+#define DEBUG 0
 #ifdef HWA
 #include "qcom/display/libgralloc/gralloc_priv.h"
 #else
@@ -397,8 +398,11 @@ CameraHAL_FixupParams(android::CameraParameters &settings)
    g_str = settings.flatten();
    char *rc = NULL;
    rc = strdup((char *)g_str.string());
+
+#ifdef DEBUG
    ALOGE("CameraHAL_FixupParams: dumped rc:%p :%s\n",
         rc, (rc != NULL) ? rc : "EMPTY STRING");
+#endif
 
    settings.set(android::CameraParameters::KEY_VIDEO_FRAME_FORMAT,
                 android::CameraParameters::PIXEL_FORMAT_YUV420SP);
