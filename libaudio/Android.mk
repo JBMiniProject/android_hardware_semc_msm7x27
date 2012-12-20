@@ -1,4 +1,4 @@
-ifeq($(BUILD_JBMP_TEST_AUDIO),true)
+ifeq ($(BUILD_JBMP_TEST_AUDIO),true)
 
 LOCAL_PATH := $(call my-dir)
 
