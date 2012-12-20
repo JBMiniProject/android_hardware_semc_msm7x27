@@ -1460,8 +1460,8 @@ status_t AudioHardware::doRouting(AudioStreamInMSM72xx *input)
                         new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
                     }
                 } else {
-                    ALOGI("Routing audio to No microphone Wired Headset (%d,%x)\n", mMode, outputDevices);
-                    new_snd_device = SND_DEVICE_HEADSET;
+                    ALOGI("Routing audio to Speakerphone\n");
+                    new_snd_device = SND_DEVICE_FARFIELD_HEADSET;
                     new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
                 }
         } else {
