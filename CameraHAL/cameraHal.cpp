@@ -545,12 +545,14 @@ qcamera_preview_enabled(struct camera_device * device)
    return qCamera->previewEnabled() ? 1 : 0;
 }
 
+#ifndef DISABLE_META
 int
 qcamera_store_meta_data_in_buffers(struct camera_device * device, int enable)
 {
    ALOGV("qcamera_store_meta_data_in_buffers:\n");
    return NO_ERROR;
 }
+#endif
 
 int
 qcamera_start_recording(struct camera_device * device)
@@ -768,7 +770,11 @@ qcamera_device_open(const hw_module_t* module, const char* name,
    camera_ops->start_preview              = qcamera_start_preview;
    camera_ops->stop_preview               = qcamera_stop_preview;
    camera_ops->preview_enabled            = qcamera_preview_enabled;
+#ifndef DISABLE_META
    camera_ops->store_meta_data_in_buffers = qcamera_store_meta_data_in_buffers;
+#else
+   camera_ops->store_meta_data_in_buffers = NULL;
+#endif
    camera_ops->start_recording            = qcamera_start_recording;
    camera_ops->stop_recording             = qcamera_stop_recording;
    camera_ops->recording_enabled          = qcamera_recording_enabled;

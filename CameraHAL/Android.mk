@@ -5,6 +5,10 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
+ifeq ($(TARGET_DISABLE_METADATA_IN_BUFFERS),true)
+      LOCAL_CFLAGS += -DDISABLE_META
+endif
+
 LOCAL_C_FLAGS        += -O3
 LOCAL_MODULE_TAGS    := optional
 LOCAL_MODULE_PATH    := $(TARGET_OUT_SHARED_LIBRARIES)/hw
