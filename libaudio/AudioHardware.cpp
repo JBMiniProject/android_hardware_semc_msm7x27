@@ -76,6 +76,8 @@ static struct tx_agc tx_agc_cfg[9];
 static int enable_preproc_mask;
 
 static int snd_device = -1;
+static int wired_headphone = 0;
+static int wired_headset = 0;
 
 #define PCM_OUT_DEVICE "/dev/msm_pcm_out"
 #define PCM_IN_DEVICE "/dev/msm_pcm_in"
@@ -83,30 +85,30 @@ static int snd_device = -1;
 #define PREPROC_CTL_DEVICE "/dev/msm_preproc_ctl"
 #define VOICE_MEMO_DEVICE "/dev/msm_voicememo"
 
-static uint32_t SND_DEVICE_CURRENT=0;
-static uint32_t SND_DEVICE_HANDSET_CL=1;
-static uint32_t SND_DEVICE_FARFIELD_CL=2;
-static uint32_t SND_DEVICE_BT=3;
-static uint32_t SND_DEVICE_BT_EC_OFF=4;
-static uint32_t SND_DEVICE_HEADSET=5;
-static uint32_t SND_DEVICE_HEADPHONE=6;
-static uint32_t SND_DEVICE_FARFIELD_HEADSET=7;
-static uint32_t SND_DEVICE_IN_S_SADC_OUT_HANDSET=8;
-static uint32_t SND_DEVICE_IN_S_SADC_OUT_SPEAKER_PHONE=9;
-static uint32_t SND_DEVICE_TTY=10;
-static uint32_t SND_DEVICE_HCO=11;
-static uint32_t SND_DEVICE_VCO=12;
-static uint32_t SND_DEVICE_CARKIT=13;
-static uint32_t SND_DEVICE_NO_MIC_HEADSET=14;
-static uint32_t SND_DEVICE_FARFIELD_OP_FM=15;
-static uint32_t SND_DEVICE_FARFIELD_CL_FM=16;
-static uint32_t SND_DEVICE_FARFIELD_OP_FM_LINEIN=17;
-static uint32_t SND_DEVICE_FARFIELD_CL_FM_LINEIN=18;
-static uint32_t SND_DEVICE_HEADSET_FM=19;
-static uint32_t SND_DEVICE_POW_HEADSET_FM=20;
-static uint32_t SND_DEVICE_HEADPHONE_FM=21;
-static uint32_t SND_DEVICE_LINEOUT_FIXED_FM=22;
-static uint32_t SND_DEVICE_DHVH_FM=23;
+static uint32_t SND_DEVICE_CURRENT=-1;
+static uint32_t SND_DEVICE_HANDSET_CL=-1;
+static uint32_t SND_DEVICE_FARFIELD_CL=-1;
+static uint32_t SND_DEVICE_BT=-1;
+static uint32_t SND_DEVICE_BT_EC_OFF=-1;
+static uint32_t SND_DEVICE_HEADSET=-1;
+static uint32_t SND_DEVICE_HEADPHONE=-1;
+static uint32_t SND_DEVICE_FARFIELD_HEADSET=-1;
+static uint32_t SND_DEVICE_IN_S_SADC_OUT_HANDSET=-1;
+static uint32_t SND_DEVICE_IN_S_SADC_OUT_SPEAKER_PHONE=-1;
+static uint32_t SND_DEVICE_TTY=-1;
+static uint32_t SND_DEVICE_HCO=-1;
+static uint32_t SND_DEVICE_VCO=-1;
+static uint32_t SND_DEVICE_CARKIT=-1;
+static uint32_t SND_DEVICE_NO_MIC_HEADSET=-1;
+static uint32_t SND_DEVICE_FARFIELD_OP_FM=-1;
+static uint32_t SND_DEVICE_FARFIELD_CL_FM=-1;
+static uint32_t SND_DEVICE_FARFIELD_OP_FM_LINEIN=-1;
+static uint32_t SND_DEVICE_FARFIELD_CL_FM_LINEIN=-1;
+static uint32_t SND_DEVICE_HEADSET_FM=-1;
+static uint32_t SND_DEVICE_POW_HEADSET_FM=-1;
+static uint32_t SND_DEVICE_HEADPHONE_FM=-1;
+static uint32_t SND_DEVICE_LINEOUT_FIXED_FM=-1;
+static uint32_t SND_DEVICE_DHVH_FM=-1;
 // ----------------------------------------------------------------------------
 
 AudioHardware::AudioHardware() :
@@ -138,7 +140,6 @@ AudioHardware::AudioHardware() :
                 CHECK_FOR(HEADSET);
                 CHECK_FOR(HEADPHONE);
                 CHECK_FOR(FARFIELD_HEADSET);
-                CHECK_FOR(NO_MIC_HEADSET);
                 CHECK_FOR(IN_S_SADC_OUT_HANDSET);
                 CHECK_FOR(IN_S_SADC_OUT_SPEAKER_PHONE);
                 CHECK_FOR(TTY);
@@ -444,6 +445,26 @@ status_t AudioHardware::setParameters(const String8& keyValuePairs)
        }
     }
 
+    const char WIRED_ACCESSORY_CLASS[] = "wired_accessory_class";
+    key = String8(WIRED_ACCESSORY_CLASS);
+    if (param.get(key, value) == NO_ERROR) {
+       if (value == "headphone") { //two lines headphones
+          ALOGV("headphone ON!");
+          wired_headphone = 1;
+          wired_headset = 0;
+       }
+       else if (value == "headset") { //three lines headphones
+          ALOGV("headset ON!");
+          wired_headphone = 0;
+          wired_headset = 1;
+       }
+       else if (value == "none") { //no wired accessory is connected
+          ALOGV("headphone/headset OFF!");
+          wired_headphone = 0;
+          wired_headset = 0;
+       }
+    }
+
     doRouting(NULL);
 
     return NO_ERROR;
@@ -481,11 +502,12 @@ int check_and_set_audpp_parameters(char *buf, int size)
     uint16_t denominator[4];
     uint16_t shift[2];
 
-    if ((buf[0] == 'A') && ((buf[1] == '1') || (buf[1] == '2') || (buf[1] == '3'))) {
+    if ((buf[0] == 'A') && ((buf[1] == '1') || (buf[1] == '2') || (buf[1] == '3') || (buf[1] == '4'))) {
         /* IIR filter */
         if(buf[1] == '1') device_id=0;
         if(buf[1] == '2') device_id=1;
         if(buf[1] == '3') device_id=2;
+        if(buf[1] == '4') device_id=3;
         if (!(p = strtok(buf, ",")))
             goto token_err;
 
@@ -507,11 +529,12 @@ int check_and_set_audpp_parameters(char *buf, int size)
             goto token_err;
         iir_cfg[device_id].num_bands = (uint16_t)strtol(p, &ps, 16);
 
-    } else if ((buf[0] == 'B') && ((buf[1] == '1') || (buf[1] == '2') || (buf[1] == '3'))) {
+    } else if ((buf[0] == 'B') && ((buf[1] == '1') || (buf[1] == '2') || (buf[1] == '3') || (buf[1] == '4'))) {
         /* This is the ADRC record we are looking for.  Tokenize it */
         if(buf[1] == '1') device_id=0;
         if(buf[1] == '2') device_id=1;
         if(buf[1] == '3') device_id=2;
+        if(buf[1] == '4') device_id=3;
         adrc_filter_exists[device_id] = true;
         if (!(p = strtok(buf, ",")))
             goto token_err;
@@ -561,11 +584,12 @@ int check_and_set_audpp_parameters(char *buf, int size)
         if (!(p = strtok(NULL, seps)))
             goto token_err;
 
-    } else if (buf[0] == 'C' && ((buf[1] == '1') || (buf[1] == '2') || (buf[1] == '3'))) {
+    } else if (buf[0] == 'C' && ((buf[1] == '1') || (buf[1] == '2') || (buf[1] == '3') || (buf[1] == '4'))) {
         /* This is the EQ record we are looking for.  Tokenize it */
         if(buf[1] == '1') device_id=0;
         if(buf[1] == '2') device_id=1;
         if(buf[1] == '3') device_id=2;
+        if(buf[1] == '4') device_id=3;
         if (!(p = strtok(buf, ",")))
             goto token_err;
 
@@ -621,11 +645,12 @@ int check_and_set_audpp_parameters(char *buf, int size)
         }
         ::dlclose(audioeq);
 
-    } else if ((buf[0] == 'D') && ((buf[1] == '1') || (buf[1] == '2') || (buf[1] == '3'))) {
+    } else if ((buf[0] == 'D') && ((buf[1] == '1') || (buf[1] == '2') || (buf[1] == '3') || (buf[1] == '4'))) {
      /* This is the MB_ADRC record we are looking for.  Tokenize it */
         if(buf[1] == '1') device_id=0;
         if(buf[1] == '2') device_id=1;
         if(buf[1] == '3') device_id=2;
+        if(buf[1] == '4') device_id=3;
         mbadrc_filter_exists[device_id] = true;
         if (!(p = strtok(buf, ",")))
             goto token_err;
@@ -939,17 +964,16 @@ static int msm72xx_enable_postproc(bool state)
         device_id = 1;
         ALOGI("set device to SND_DEVICE_HANDSET_CL device_id=1");
     }
-
-    if(snd_device == SND_DEVICE_HEADSET || snd_device == SND_DEVICE_HEADPHONE)
+    if(snd_device == SND_DEVICE_HEADSET)
     {
         device_id = 2;
-        ALOGI("set device to SND_DEVICE_HEADSET/SND_DEVICE_HEADPHONE device_id=2");
+        ALOGI("set device to SND_DEVICE_HEADSET device_id=2");
     }
-    if(snd_device == SND_DEVICE_NO_MIC_HEADSET)
+    /*if(snd_device == SND_DEVICE_HEADPHONE)
     {
         device_id = 3;
-        ALOGI("set device to SND_DEVICE_NO_MIC_HEADSET device_id=3");
-    }
+        ALOGI("set device to SND_DEVICE_HEADPHONE device_id=3");
+    }*/
 
     fd = open(PCM_CTL_DEVICE, O_RDWR);
     if (fd < 0) {
@@ -1166,14 +1190,13 @@ status_t AudioHardware::setVoiceVolume(float v)
 status_t AudioHardware::setMasterVolume(float v)
 {
     android::Mutex::Autolock lock(mLock);
-    int vol = ceil(v * 1.0);
+    int vol = ceil(v * 7.0);
     ALOGI("Set master volume to %d.\n", vol);
     set_volume_rpc(SND_DEVICE_HANDSET_CL, SND_METHOD_VOICE, vol, m7xsnddriverfd);
     set_volume_rpc(SND_DEVICE_FARFIELD_CL, SND_METHOD_VOICE, vol, m7xsnddriverfd);
     set_volume_rpc(SND_DEVICE_BT,      SND_METHOD_VOICE, vol, m7xsnddriverfd);
     set_volume_rpc(SND_DEVICE_HEADSET, SND_METHOD_VOICE, vol, m7xsnddriverfd);
     set_volume_rpc(SND_DEVICE_HEADPHONE, SND_METHOD_VOICE, vol, m7xsnddriverfd);
-    set_volume_rpc(SND_DEVICE_NO_MIC_HEADSET, SND_METHOD_VOICE, vol, m7xsnddriverfd);
     set_volume_rpc(SND_DEVICE_IN_S_SADC_OUT_HANDSET, SND_METHOD_VOICE, vol, m7xsnddriverfd);
     set_volume_rpc(SND_DEVICE_IN_S_SADC_OUT_SPEAKER_PHONE, SND_METHOD_VOICE, vol, m7xsnddriverfd);
     // We return an error code here to let the audioflinger do in-software
@@ -1192,6 +1215,8 @@ status_t AudioHardware::setFmOnOff(bool onoff)
 
     if (onoff) {
         ALOGI("Setting fm radio to true");
+        wired_headphone = 0;
+        wired_headset = 0;
         mFmRadioEnabled = true;
     } else {
         ALOGI("Setting fm radio to false");
@@ -1303,10 +1328,9 @@ status_t AudioHardware::doAudioRouteOrMute(uint32_t device)
     /* Android >= 2.0 advises to use STREAM_VOICE_CALL streams and setSpeakerphoneOn() */
     /* Android >= 2.3 uses MODE_IN_COMMUNICATION for SIP calls */
     bool mute = !isInCall();
-    if(mute && ((device == SND_DEVICE_HANDSET_CL) ||(device == SND_DEVICE_FARFIELD_CL))) {
+    if(mute && (device == SND_DEVICE_HANDSET_CL)) {
         mute = !mBuiltinMicSelected;
     }
-
     if (device == SND_DEVICE_FARFIELD_CL_FM || device == SND_DEVICE_HEADPHONE_FM) {
         ALOGE("doAudioRouteOrMute() FOR FM device %d, mMode %d, mMicMute %d, mBuiltinMicSelected %d, %s",
             device, mMode, mMicMute, mBuiltinMicSelected, mute ? "muted" : "audio circuit active");
@@ -1317,7 +1341,6 @@ status_t AudioHardware::doAudioRouteOrMute(uint32_t device)
 
     ALOGD("doAudioRouteOrMute() device %x, mMode %d, mMicMute %d, mBuiltinMicSelected %d, %s",
         device, mMode, mMicMute, mBuiltinMicSelected, mute ? "muted" : "audio circuit active");
-
     status_t ret = do_route_audio_rpc(device, mute, mMicMute, m7xsnddriverfd);
     if (mFmRadioEnabled) {
         if (previous_snd_device == SND_DEVICE_FARFIELD_CL_FM || previous_snd_device == SND_DEVICE_HEADPHONE_FM) {
@@ -1338,6 +1361,14 @@ status_t AudioHardware::doRouting(AudioStreamInMSM72xx *input)
     uint32_t outputDevices = mOutput->devices();
     status_t ret = NO_ERROR;
     int new_snd_device = -1;
+    ALOGV("wired_headphone is %d wired_headset is %d", wired_headphone, wired_headset);
+    if (wired_headphone == 1) {
+        new_snd_device = SND_DEVICE_HEADSET;
+    }
+    else if (wired_headset == 1) {
+        new_snd_device = SND_DEVICE_HEADSET;
+    }
+
     int new_post_proc_feature_mask = 0;
 
     //int (*msm72xx_enable_audpp)(int);
@@ -1414,7 +1445,7 @@ status_t AudioHardware::doRouting(AudioStreamInMSM72xx *input)
             } else {
                 if (mFmRadioEnabled) {
                     if (mFmRadioSpeakerEnabled) {
-                        ALOGI("Routing FM audio to Farfield\n");
+                        ALOGI("Routing FM audio to Speakerphone\n");
                         new_snd_device = SND_DEVICE_FARFIELD_CL_FM;
                         new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
                     }
@@ -1431,39 +1462,38 @@ status_t AudioHardware::doRouting(AudioStreamInMSM72xx *input)
             }
 #endif
         } else if (outputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADSET) {
-                if (mFmRadioEnabled) {
-                    if (mFmRadioSpeakerEnabled) {
-                        ALOGI("Routing FM audio to Farfield\n");
-                        new_snd_device = SND_DEVICE_FARFIELD_CL_FM;
-                        new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
-                    }
-                    else {
-                        ALOGI("Routing FM audio to No microphone Wired Headset (%d,%x)\n", mMode, outputDevices);
-                        new_snd_device = SND_DEVICE_HEADPHONE_FM;
-                        new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
-                    }
-                } else {
-                    ALOGI("Routing audio to No microphone Wired Headset (%d,%x)\n", mMode, outputDevices);
-                    new_snd_device = SND_DEVICE_HEADSET;
+            if (mFmRadioEnabled) {
+                if (mFmRadioSpeakerEnabled) {
+                    ALOGI("Routing FM audio to Speakerphone\n");
+                    new_snd_device = SND_DEVICE_FARFIELD_CL_FM;
                     new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
                 }
+                else {
+                    ALOGI("Routing FM audio to Wired Headset\n");
+                    new_snd_device = SND_DEVICE_HEADPHONE_FM;
+                    new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
+                }
+            } else {
+                ALOGI("Routing audio to Wired Headset\n");
+                new_snd_device = SND_DEVICE_HEADSET;
+                new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE); }
         } else if (outputDevices & AudioSystem::DEVICE_OUT_SPEAKER) {
-                if (mFmRadioEnabled) {
-                    if (mFmRadioSpeakerEnabled) {
-                        ALOGI("Routing FM audio to Farfield\n");
-                        new_snd_device = SND_DEVICE_FARFIELD_CL_FM;
-                        new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
-                    }
-                    else {
-                        ALOGI("Routing FM audio to No microphone Wired Headset (%d,%x)\n", mMode, outputDevices);
-                        new_snd_device = SND_DEVICE_HEADPHONE_FM;
-                        new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
-                    }
-                } else {
-                    ALOGI("Routing audio to Speakerphone\n");
-                    new_snd_device = SND_DEVICE_FARFIELD_HEADSET;
+            if (mFmRadioEnabled) {
+                if (mFmRadioSpeakerEnabled) {
+                    ALOGI("Routing FM audio to Speakerphone\n");
+                    new_snd_device = SND_DEVICE_FARFIELD_CL_FM;
                     new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
                 }
+                else {
+                    ALOGI("Routing FM audio to Wired Headset\n");
+                    new_snd_device = SND_DEVICE_HEADPHONE_FM;
+                    new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
+                }
+            } else {
+                ALOGI("Routing audio to Speakerphone\n");
+                new_snd_device = SND_DEVICE_FARFIELD_CL;
+                new_post_proc_feature_mask = (ADRC_ENABLE | EQ_ENABLE | RX_IIR_ENABLE | MBADRC_ENABLE);
+            }
         } else {
             ALOGI("Routing audio to Handset\n");
             new_snd_device = SND_DEVICE_HANDSET_CL;
@@ -2123,8 +2153,8 @@ ssize_t AudioHardware::AudioStreamInMSM72xx::read( void* buffer, ssize_t bytes)
     size_t  aac_framesize= bytes;
     uint8_t* p = static_cast<uint8_t*>(buffer);
     uint32_t* recogPtr = (uint32_t *)p;
-    uint16_t* frameCountPtr = 0;
-    uint16_t* frameSizePtr = 0;
+    uint16_t* frameCountPtr;
+    uint16_t* frameSizePtr;
 
     if (mState < AUDIO_INPUT_OPENED) {
         AudioHardware *hw = mHardware;
@@ -2191,7 +2221,7 @@ ssize_t AudioHardware::AudioStreamInMSM72xx::read( void* buffer, ssize_t bytes)
         }
         else if(bytesRead == 0)
         {
-         ALOGI("Bytes Read = %ld ,Buffer no longer sufficient",bytesRead);
+         ALOGI("Bytes Read = %d ,Buffer no longer sufficient",bytesRead);
          break;
         } else {
             if (errno != EAGAIN) return bytesRead;
