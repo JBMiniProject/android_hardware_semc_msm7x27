@@ -93,6 +93,10 @@ audio_devices_t AudioPolicyManager::getDeviceForStrategy(routing_strategy strate
             // FALL THROUGH
 
         default:    // FORCE_NONE
+            device = AudioSystem::DEVICE_OUT_EARPIECE; //AUDIO_DEVICE_OUT_DEFAULT
+            if (device == 0) {
+                ALOGV("getDeviceForStrategy() earpiece device not found");
+            }
             device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADPHONE;
             if (device) break;
             device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADSET;
@@ -110,10 +114,6 @@ audio_devices_t AudioPolicyManager::getDeviceForStrategy(routing_strategy strate
                 device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_SPEAKER;
             if (device) break;
 
-            device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_EARPIECE;
-            if (device == 0) {
-                ALOGE("getDeviceForStrategy() earpiece device not found");
-            }
             break;
 
         case AudioSystem::FORCE_SPEAKER:
@@ -219,7 +219,7 @@ audio_devices_t AudioPolicyManager::getDeviceForStrategy(routing_strategy strate
 
 status_t AudioPolicyManager::checkAndSetVolume(int stream, int index, audio_io_handle_t output, audio_devices_t device, int delayMs, bool force)
 {
-
+    ALOGV("checkAndSetVolume called!");
     // do not change actual stream volume if the stream is muted
     if (mOutputs.valueFor(output)->mMuteCount[stream] != 0) {
         ALOGV("checkAndSetVolume() stream %d muted count %d", stream, mOutputs.valueFor(output)->mMuteCount[stream]);
@@ -235,6 +235,7 @@ status_t AudioPolicyManager::checkAndSetVolume(int stream, int index, audio_io_h
     }
 
     float volume = computeVolume(stream, index, output, device);
+    volume*=0.3;
     // We actually change the volume if:
     // - the float value returned by computeVolume() changed
     // - the force flag is set
@@ -261,6 +262,7 @@ status_t AudioPolicyManager::checkAndSetVolume(int stream, int index, audio_io_h
         } else {
             voiceVolume = 1.0;
         }
+        ALOGE("would set volume %f, delay %d", volume, delayMs);
         if (voiceVolume >= 0 && output == mPrimaryOutput) {
             mpClientInterface->setVoiceVolume(voiceVolume, delayMs);
             mLastVoiceVolume = voiceVolume;
