@@ -2153,8 +2153,8 @@ ssize_t AudioHardware::AudioStreamInMSM72xx::read( void* buffer, ssize_t bytes)
     size_t  aac_framesize= bytes;
     uint8_t* p = static_cast<uint8_t*>(buffer);
     uint32_t* recogPtr = (uint32_t *)p;
-    uint16_t* frameCountPtr;
-    uint16_t* frameSizePtr;
+    uint16_t* frameCountPtr = 0;
+    uint16_t* frameSizePtr = 0;
 
     if (mState < AUDIO_INPUT_OPENED) {
         AudioHardware *hw = mHardware;
