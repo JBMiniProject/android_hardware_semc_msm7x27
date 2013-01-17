@@ -1014,17 +1014,17 @@ static int msm72xx_enable_postproc(bool state)
         return -EINVAL;
     }
 
-    if(snd_device == SND_DEVICE_FARFIELD_CL)
+    if(snd_device == (int)SND_DEVICE_FARFIELD_CL)
     {
         device_id = 0;
         ALOGI("set device to SND_DEVICE_FARFIELD_CL device_id=0");
     }
-    if(snd_device == SND_DEVICE_HANDSET_CL)
+    if(snd_device == (int)SND_DEVICE_HANDSET_CL)
     {
         device_id = 1;
         ALOGI("set device to SND_DEVICE_HANDSET_CL device_id=1");
     }
-    if(snd_device == SND_DEVICE_HEADSET)
+    if(snd_device == (int)SND_DEVICE_HEADSET)
     {
         device_id = 2;
         ALOGI("set device to SND_DEVICE_HEADSET device_id=2");
@@ -1237,7 +1237,7 @@ status_t AudioHardware::setVoiceVolume(float v)
     ALOGD("setVoiceVolume(%f)\n", v);
     ALOGI("Setting in-call volume to %d (available range is 1 to 6)\n", vol);
 
-    if ((mCurSndDevice != -1) && ((mCurSndDevice == SND_DEVICE_TTY) || (mCurSndDevice == SND_DEVICE_VCO)))
+    if ((mCurSndDevice != -1) && ((mCurSndDevice == (int)SND_DEVICE_TTY) || (mCurSndDevice == (int)SND_DEVICE_VCO)))
     {
         vol = 1;
         ALOGI("For TTY device in FULL or VCO mode, the volume level is set to: %d \n", vol);
@@ -1404,7 +1404,7 @@ status_t AudioHardware::doAudioRouteOrMute(uint32_t device)
         device, mMode, mMicMute, mBuiltinMicSelected, mute ? "muted" : "audio circuit active");
     status_t ret = do_route_audio_rpc(device, mute, mMicMute, m7xsnddriverfd);
     if (mFmRadioEnabled) {
-        if (previous_snd_device == SND_DEVICE_FARFIELD_CL_FM || previous_snd_device == SND_DEVICE_HEADPHONE_FM) {
+        if (previous_snd_device == (int)SND_DEVICE_FARFIELD_CL_FM || previous_snd_device == (int)SND_DEVICE_HEADPHONE_FM) {
             ALOGD("doAudioRouteOrMute() previous_snd_device was FM: %d", previous_snd_device);
             do_route_audio_rpc(previous_snd_device, 0, 1, m7xsnddriverfd);
             do_route_audio_rpc(previous_snd_device, 0, 0, m7xsnddriverfd);
@@ -1563,10 +1563,10 @@ status_t AudioHardware::doRouting(AudioStreamInMSM72xx *input)
     }
 
     if (mDualMicEnabled && mMode == AudioSystem::MODE_IN_CALL) {
-        if (new_snd_device == SND_DEVICE_HANDSET_CL) {
+        if (new_snd_device == (int)SND_DEVICE_HANDSET_CL) {
             ALOGI("Routing audio to handset with DualMike enabled\n");
             new_snd_device = SND_DEVICE_IN_S_SADC_OUT_HANDSET;
-        } else if (new_snd_device == SND_DEVICE_FARFIELD_CL) {
+        } else if (new_snd_device == (int)SND_DEVICE_FARFIELD_CL) {
             ALOGI("Routing audio to speakerphone with DualMike enabled\n");
             new_snd_device = SND_DEVICE_IN_S_SADC_OUT_SPEAKER_PHONE;
         }
@@ -2282,7 +2282,7 @@ ssize_t AudioHardware::AudioStreamInMSM72xx::read( void* buffer, ssize_t bytes)
         }
         else if(bytesRead == 0)
         {
-         ALOGI("Bytes Read = %d ,Buffer no longer sufficient",bytesRead);
+         ALOGI("Bytes Read = %ld ,Buffer no longer sufficient",bytesRead);
          break;
         } else {
             if (errno != EAGAIN) return bytesRead;

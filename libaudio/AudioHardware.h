@@ -309,8 +309,8 @@ private:
             int mNumSndEndpoints;
             int mCurSndDevice;
             int m7xsnddriverfd;
-            bool        mDualMicEnabled;
             int         mTtyMode;
+            bool        mDualMicEnabled;
 
             bool        mBuiltinMicSelected;
 
