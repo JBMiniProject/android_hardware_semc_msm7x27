@@ -15,7 +15,7 @@
  */
 
 #define LOG_TAG "AudioPolicyManagerMSM72XX"
-//#define LOG_NDEBUG 0
+
 #include <utils/Log.h>
 #include "AudioPolicyManager.h"
 #include <media/mediarecorder.h>
@@ -23,15 +23,12 @@
 
 namespace android_audio_legacy {
 
-
-
 // ----------------------------------------------------------------------------
 // AudioPolicyManager for msm7k platform
 // Common audio policy manager code is implemented in AudioPolicyManagerBase class
 // ----------------------------------------------------------------------------
 
 // ---  class factory
-
 
 extern "C" AudioPolicyInterface* createAudioPolicyManager(AudioPolicyClientInterface *clientInterface)
 {
@@ -235,7 +232,7 @@ status_t AudioPolicyManager::checkAndSetVolume(int stream, int index, audio_io_h
     }
 
     float volume = computeVolume(stream, index, output, device);
-    volume*=0.25;
+    volume *= 0.25;
     // We actually change the volume if:
     // - the float value returned by computeVolume() changed
     // - the force flag is set

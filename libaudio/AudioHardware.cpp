@@ -17,11 +17,9 @@
 
 #include <math.h>
 
-//#define LOG_NDEBUG 0
 #define LOG_TAG "AudioHardwareMSM72XX"
 #include <utils/Log.h>
 #include <utils/String8.h>
-
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -36,7 +34,6 @@
 #include <media/AudioRecord.h>
 
 #define LOG_SND_RPC 0  // Set to 1 to log sound RPC's
-
 #define COMBO_DEVICE_SUPPORTED 0 // Headset speaker combo device not supported on this target
 #define DUALMIC_KEY "dualmic_enabled"
 #define TTY_MODE_KEY "tty_mode"
@@ -199,7 +196,8 @@ AudioHardware::AudioHardware() :
         ioctl(m7xsnddriverfd, SND_AVC_CTL, &AUTO_VOLUME_ENABLED);
         ioctl(m7xsnddriverfd, SND_AGC_CTL, &AUTO_VOLUME_ENABLED);
     }
-	else ALOGE("Could not open MSM SND driver.");
+    else
+        ALOGE("Could not open MSM SND driver.");
 }
 
 AudioHardware::~AudioHardware()
@@ -1009,6 +1007,7 @@ static int msm72xx_enable_postproc(bool state)
         ALOGE("Parsing error in AudioFilter.csv.");
         return -EINVAL;
     }
+
     if(snd_device < 0) {
         ALOGE("Enabling/Disabling post proc features for device: %d", snd_device);
         return -EINVAL;
@@ -1019,21 +1018,18 @@ static int msm72xx_enable_postproc(bool state)
         device_id = 0;
         ALOGI("set device to SND_DEVICE_FARFIELD_CL device_id=0");
     }
+
     if(snd_device == (int)SND_DEVICE_HANDSET_CL)
     {
         device_id = 1;
         ALOGI("set device to SND_DEVICE_HANDSET_CL device_id=1");
     }
+
     if(snd_device == (int)SND_DEVICE_HEADSET)
     {
         device_id = 2;
         ALOGI("set device to SND_DEVICE_HEADSET device_id=2");
     }
-    /*if(snd_device == SND_DEVICE_HEADPHONE)
-    {
-        device_id = 3;
-        ALOGI("set device to SND_DEVICE_HEADPHONE device_id=3");
-    }*/
 
     fd = open(PCM_CTL_DEVICE, O_RDWR);
     if (fd < 0) {
@@ -1310,7 +1306,7 @@ static int logToLinear(float volume)
 
 status_t AudioHardware::setFmVolume(float v)
 {
-    float ratio = 2.5;
+    float ratio = 2.0;
     int volume = (unsigned int)logToLinear(v) * ratio;
 
     char volhex[10] = "";
@@ -1389,9 +1385,11 @@ status_t AudioHardware::doAudioRouteOrMute(uint32_t device)
     /* Android >= 2.0 advises to use STREAM_VOICE_CALL streams and setSpeakerphoneOn() */
     /* Android >= 2.3 uses MODE_IN_COMMUNICATION for SIP calls */
     bool mute = !isInCall();
+
     if(mute && (device == SND_DEVICE_HANDSET_CL)) {
         mute = !mBuiltinMicSelected;
     }
+
     if (device == SND_DEVICE_FARFIELD_CL_FM || device == SND_DEVICE_HEADPHONE_FM) {
         ALOGE("doAudioRouteOrMute() FOR FM device %d, mMode %d, mMicMute %d, mBuiltinMicSelected %d, %s",
             device, mMode, mMicMute, mBuiltinMicSelected, mute ? "muted" : "audio circuit active");
@@ -1431,9 +1429,6 @@ status_t AudioHardware::doRouting(AudioStreamInMSM72xx *input)
     }
 
     int new_post_proc_feature_mask = 0;
-
-    //int (*msm72xx_enable_audpp)(int);
-    //msm72xx_enable_audpp = (int (*)(int))::dlsym(acoustic, "msm72xx_enable_audpp");
 
     if (input != NULL) {
         uint32_t inputDevice = input->devices();
@@ -1931,7 +1926,7 @@ status_t AudioHardware::AudioStreamInMSM72xx::set(
     status_t status = 0;
     if(*pFormat == AUDIO_HW_IN_FORMAT)
     {
-    // open audio input device
+        // open audio input device
         status = ::open(PCM_IN_DEVICE, O_RDWR);
         if (status < 0) {
             ALOGE("Cannot open %s errno: %d", PCM_IN_DEVICE, errno);
@@ -2113,11 +2108,7 @@ status_t AudioHardware::AudioStreamInMSM72xx::set(
         }
     }
 
-    //mHardware->setMicMute_nosync(false);
     mState = AUDIO_INPUT_OPENED;
-
-    //if (!acoustic)
-    //    return NO_ERROR;
 
     if (audpp_filter_inited)
     {
@@ -2383,5 +2374,4 @@ String8 AudioHardware::AudioStreamInMSM72xx::getParameters(const String8& keys)
 extern "C" AudioHardwareInterface* createAudioHardware(void) {
     return new AudioHardware();
 }
-
 }; // namespace android

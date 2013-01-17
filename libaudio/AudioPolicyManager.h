@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-
 #include <stdint.h>
 #include <sys/types.h>
 #include <utils/Timers.h>
 #include <utils/Errors.h>
 #include <utils/KeyedVector.h>
 #include <hardware_legacy/AudioPolicyManagerBase.h>
-
 
 namespace android_audio_legacy {
 
@@ -45,7 +43,5 @@ protected:
 
 // check that volume change is permitted, compute and send new volume to audio hardware
         status_t checkAndSetVolume(int stream, int index, audio_io_handle_t output, audio_devices_t device, int delayMs = 0, bool force = false);
-
-
 };
 };

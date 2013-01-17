@@ -19,10 +19,8 @@
 
 #include <stdint.h>
 #include <sys/types.h>
-
 #include <utils/threads.h>
 #include <utils/SortedVector.h>
-
 #include <hardware_legacy/AudioHardwareBase.h>
 
 extern "C" {
@@ -152,7 +150,6 @@ enum tty_modes {
 #define AUDIO_HW_IN_BUFFERSIZE 2048                 // Default audio input buffer size
 #define AUDIO_HW_IN_FORMAT (AudioSystem::PCM_16_BIT)  // Default audio input sample format
 // ----------------------------------------------------------------------------
-
 
 class AudioHardware : public  AudioHardwareBase
 {
