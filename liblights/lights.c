@@ -56,11 +56,11 @@ char const*const POWER_FILE      = "/sys/devices/virtual/misc/rgb_led/rgb_led/po
 
 char const*const LCD_FILE_PATH1 = "/sys/devices/platform/i2c-adapter/i2c-0/0-0036/br::intensity";
 char const*const LCD_FILE_PATH2 = "/sys/devices/i2c-0/0-0036/br::intensity";
-char * LCD_FILE
+char * LCD_FILE;
 
 char const*const ALS_FILE_PATH1 = "/sys/devices/platform/i2c-adapter/i2c-0/0-0036/mode";
 char const*const ALS_FILE_PATH2 = "/sys/devices/i2c-0/0-0036/mode";
-char * ALS_FILE
+char * ALS_FILE;
 
 char const*const BUTTON_FILE     = "";
 
